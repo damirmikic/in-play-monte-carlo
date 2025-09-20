@@ -11,6 +11,7 @@ import pandas as pd
 CRVENI_KARTON_NAPAD_PENAL = 0.75
 CRVENI_KARTON_ODBRANA_BONUS = 1.15
 
+@st.cache_data
 def monte_carlo_soccer_inplay(
     trenutni_minut: int,
     trenutni_golovi_domacin: int,
@@ -21,10 +22,15 @@ def monte_carlo_soccer_inplay(
     crveni_kartoni_gost: int = 0,
     broj_simulacija: int = 10000
 ) -> dict:
+    
+    # --- Osnovni proračuni ---
     preostalo_vreme_procenat = (90 - trenutni_minut) / 90
+    if preostalo_vreme_procenat < 0: preostalo_vreme_procenat = 0
+
     preostali_xg_domacin = pre_match_xg_domacin * preostalo_vreme_procenat
     preostali_xg_gost = pre_match_xg_gost * preostalo_vreme_procenat
 
+    # --- Prilagođavanje za crvene kartone ---
     if crveni_kartoni_domacin > 0:
         preostali_xg_domacin *= (CRVENI_KARTON_NAPAD_PENAL ** crveni_kartoni_domacin)
         preostali_xg_gost *= (CRVENI_KARTON_ODBRANA_BONUS ** crveni_kartoni_domacin)
@@ -33,6 +39,7 @@ def monte_carlo_soccer_inplay(
         preostali_xg_gost *= (CRVENI_KARTON_NAPAD_PENAL ** crveni_kartoni_gost)
         preostali_xg_domacin *= (CRVENI_KARTON_ODBRANA_BONUS ** crveni_kartoni_gost)
 
+    # --- Simulacija ---
     simulirani_golovi_domacin = np.random.poisson(preostali_xg_domacin, broj_simulacija)
     simulirani_golovi_gost = np.random.poisson(preostali_xg_gost, broj_simulacija)
 
@@ -41,6 +48,7 @@ def monte_carlo_soccer_inplay(
     
     ukupno_golova = konacni_golovi_domacin + konacni_golovi_gost
     
+    # --- Proračun verovatnoća za markete ---
     pobeda_domacina = np.sum(konacni_golovi_domacin > konacni_golovi_gost) / broj_simulacija
     nereseno = np.sum(konacni_golovi_domacin == konacni_golovi_gost) / broj_simulacija
     pobeda_gosta = 1 - pobeda_domacina - nereseno
@@ -54,6 +62,8 @@ def monte_carlo_soccer_inplay(
     def prob_to_odds(prob):
         return (1 / prob) if prob > 0 else float('inf')
 
+    # --- Kreiranje rečnika koji se vraća ---
+    # Ova verzija garantuje da su svi potrebni ključevi uvek prisutni.
     return {
         "1. Konacan Ishod (1X2)": {
             "1": {"prob": pobeda_domacina, "kvota": prob_to_odds(pobeda_domacina)},
