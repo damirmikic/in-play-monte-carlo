@@ -149,12 +149,17 @@ if st.button("POKRENI SIMULACIJU", use_container_width=True):
         st.metric(label="DA", value=f"{btts_data['Da']['kvota']:.2f}", delta=f"{btts_data['Da']['prob']*100:.1f}% verovatnoća")
         st.metric(label="NE", value=f"{btts_data['Ne']['kvota']:.2f}", delta=f"{btts_data['Ne']['prob']*100:.1f}% verovatnoća")
 
-    st.subheader("Tačan Rezultat (Top 5 najverovatnijih)")
-    cs_data = sim_rezultat["4. Tacan Rezultat (Top 5)"]
-    # Konvertujemo u DataFrame radi lepšeg prikaza
-    df_cs = pd.DataFrame.from_dict(cs_data, orient='index')
-    df_cs.columns = ['Verovatnoća']
-    df_cs['Kvota'] = df_cs['Verovatnoća'].apply(prob_to_odds)
-    df_cs['Verovatnoća'] = pd.Series(["{0:.2f}%".format(val * 100) for val in df_cs['Verovatnoća']], index = df_cs.index)
-    df_cs['Kvota'] = df_cs['Kvota'].map('{:,.2f}'.format)
-    st.table(df_cs)
+   # ISPRAVLJEN KOD
+st.subheader("Tačan Rezultat (Top 5 najverovatnijih)")
+cs_data = sim_rezultat["4. Tacan Rezultat (Top 5)"]
+df_cs = pd.DataFrame.from_dict(cs_data, orient='index')
+
+# Ispravno preimenovanje DVE kolone
+df_cs.columns = ['Verovatnoća', 'Kvota']
+
+# Formatiranje kolona radi lepšeg prikaza
+# .map('{:.2%}') je elegantniji način za formatiranje u procente
+df_cs['Verovatnoća'] = df_cs['Verovatnoća'].map('{:.2%}'.format) 
+df_cs['Kvota'] = df_cs['Kvota'].map('{:,.2f}'.format)
+
+st.table(df_cs)
